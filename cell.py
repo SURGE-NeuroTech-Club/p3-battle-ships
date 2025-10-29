@@ -27,11 +27,8 @@ class Cell(pygame.sprite.Sprite):
         self.image = pygame.Surface((self.size, self.size))
         self.rect = self.image.get_rect(topleft=(self.x_pos, self.y_pos))
 
-        # --- SSVEP Flicker Logic ---
-        self.is_lit = False
-        cell_index = (self.row * settings.COLS) + self.col
-        self.flicker_rate = settings.BASE_FLICKER_RATE_MS + (cell_index * settings.FLICKER_RATE_INCREMENT)
-        self.last_flicker_time = pygame.time.get_ticks()
+        # --- Row/Column Highlighting ---
+        self.is_highlighted = False  # Controlled externally by Game class
 
         # --- Ship Image ---
         self.ship_image = None
@@ -44,33 +41,26 @@ class Cell(pygame.sprite.Sprite):
     def update(self):
         """
         Update is called once per frame.
-        This handles the cell's flicker logic and visual state.
+        This handles the cell's visual state based on highlighting.
         """
-        # Only flicker if the cell is 'empty'
-        if self.state == 'empty':
-            self._handle_flicker()
-        else:
-            self.is_lit = False  # Stop flashing if 'ship' or 'disabled'
-
         self._draw_cell()
-
-    def _handle_flicker(self):
-        """Toggles the 'is_lit' state based on its unique flicker_rate."""
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_flicker_time > self.flicker_rate:
-            self.is_lit = not self.is_lit
-            self.last_flicker_time = current_time
+    
+    def set_highlighted(self, is_highlighted):
+        """
+        Set whether this cell should be highlighted (called by Game class).
+        """
+        self.is_highlighted = is_highlighted
 
     def _draw_cell(self):
         """Updates the cell's self.image Surface with the correct color/image."""
 
         if self.state == 'empty':
-            # Apply flicker if empty
-            final_color = settings.COLOR_CELL_ON if self.is_lit else settings.COLOR_CELL_OFF
+            # Apply highlighting if empty and highlighted
+            final_color = settings.COLOR_CELL_ON if self.is_highlighted else settings.COLOR_CELL_OFF
             self.image.fill(final_color)
 
         elif self.state == 'ship':
-            # Cell with a ship doesn't flicker and displays the ship image
+            # Cell with a ship doesn't highlight and displays the ship image
             self.image.fill(settings.COLOR_SHIP_BG)
             if self.ship_image:
                 self.image.blit(self.ship_image, (0, 0))
@@ -89,7 +79,7 @@ class Cell(pygame.sprite.Sprite):
         """
         if self.state == 'empty':
             self.state = 'ship'
-            self.is_lit = False  # Stop flashing
+            self.is_highlighted = False  # Stop highlighting
             return True
         return False
 

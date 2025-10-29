@@ -37,6 +37,8 @@ GAME_TITLE = "SSVEP Battleship - Placement Phase"
 # SSVEP Flicker Settings
 BASE_FLICKER_RATE_MS = 300
 FLICKER_RATE_INCREMENT = 8 
+STIM_TIME_MS = 500
+INTER_STIM_TIME_MS = 100  # Time between stimuli when no row/col is highlighted
 
 # Colors (R, G, B)
 COLOR_BLACK = (0, 0, 0)
