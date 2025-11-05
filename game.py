@@ -1,4 +1,5 @@
 import sys
+import random
 
 import pygame
 
@@ -33,6 +34,17 @@ class Game:
         self.buttons = {}
 
         self.placed_ships = []
+
+        # --- Row/Column Highlighting with Random Selection ---
+        self.available_rows = list(range(settings.ROWS))  # [0, 1, 2, 3, 4, 5]
+        self.available_cols = list(range(settings.COLS))  # [0, 1, 2, 3, 4, 5]
+        self.highlight_type = None  # 'row' or 'col'
+        self.highlighted_index = None  # Which row or column is currently highlighted
+        self.last_highlight_time = pygame.time.get_ticks()
+        self.is_inter_stim_period = False  # Track if we're in the gap between stimuli
+        
+        # Initialize first stimulus
+        self._select_next_highlight()
 
         self._create_grid()
         self._create_cursor()
@@ -158,9 +170,77 @@ class Game:
 
     def _update(self):
         """Updates all game objects in the all_sprites group."""
+        self._update_row_col_highlighting()
         self.all_sprites.update()
         self.cursor_group.update()
         self.button_group.update()
+    
+    def _update_row_col_highlighting(self):
+        """
+        Cycles through rows and columns with random selection and no replacement.
+        - Randomly chooses row or column (50/50)
+        - Selects without replacement from available pool
+        - Refreshes pool when empty
+        - Includes inter-stimulus interval where nothing is highlighted
+        """
+        current_time = pygame.time.get_ticks()
+        
+        if self.is_inter_stim_period:
+            # We're in the gap between stimuli - check if it's time to show next stimulus
+            if current_time - self.last_highlight_time >= settings.INTER_STIM_TIME_MS:
+                self.last_highlight_time = current_time
+                self.is_inter_stim_period = False
+                self._select_next_highlight()
+            
+            # Turn off all highlights during inter-stimulus period
+            for cell in self.cells_by_pos.values():
+                cell.set_highlighted(False)
+        else:
+            # We're showing a stimulus - check if it's time to go to inter-stimulus period
+            if current_time - self.last_highlight_time >= settings.STIM_TIME_MS:
+                self.last_highlight_time = current_time
+                self.is_inter_stim_period = True
+            
+            # Update all cells to reflect the current highlighting
+            for (r, c), cell in self.cells_by_pos.items():
+                if self.highlight_type == 'row' and r == self.highlighted_index:
+                    cell.set_highlighted(True)
+                elif self.highlight_type == 'col' and c == self.highlighted_index:
+                    cell.set_highlighted(True)
+                else:
+                    cell.set_highlighted(False)
+    
+    def _select_next_highlight(self):
+        """
+        Randomly selects the next row or column to highlight.
+        Uses random selection without replacement.
+        """
+        # Randomly choose between row and column (50/50 probability)
+        self.highlight_type = random.choice(['row', 'col'])
+        
+        # Select from the appropriate pool
+        if self.highlight_type == 'row':
+            # If no rows available, refresh the pool
+            if not self.available_rows:
+                self.available_rows = list(range(settings.ROWS))
+                print("Row pool refreshed")
+            
+            # Randomly select and remove a row from available pool
+            self.highlighted_index = random.choice(self.available_rows)
+            self.available_rows.remove(self.highlighted_index)
+            print(f"Selected ROW {self.highlighted_index + 1} (remaining rows: {len(self.available_rows)})")
+            
+        else:  # 'col'
+            # If no columns available, refresh the pool
+            if not self.available_cols:
+                self.available_cols = list(range(settings.COLS))
+                print("Column pool refreshed")
+            
+            # Randomly select and remove a column from available pool
+            self.highlighted_index = random.choice(self.available_cols)
+            self.available_cols.remove(self.highlighted_index)
+            col_label = settings.COL_LABELS[self.highlighted_index]
+            print(f"Selected COLUMN {col_label} (remaining cols: {len(self.available_cols)})")
 
     def _draw_info_panel(self):
         """Draws the top info panel."""
