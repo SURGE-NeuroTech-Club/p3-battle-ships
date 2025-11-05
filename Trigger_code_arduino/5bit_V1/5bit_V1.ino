@@ -13,7 +13,7 @@ void setup()
     for (uint8_t i = 0; i < NUM_TRIGGER_PINS; ++i)
     {
         pinMode(TRIGGER_PINS[i], OUTPUT);
-        digitalWrite(TRIGGER_PINS[i], LOW);
+        digitalWrite(TRIGGER_PINS[i], HIGH);
     }
 
     Serial.begin(115200);
@@ -41,7 +41,8 @@ void setTriggerPattern(uint8_t code)
     for (uint8_t i = 0; i < NUM_TRIGGER_PINS; ++i)
     {
         bool bitHigh = (code >> i) & 0x01;
-        digitalWrite(TRIGGER_PINS[i], bitHigh ? HIGH : LOW);
+        digitalWrite(TRIGGER_PINS[i], bitHigh ? LOW : HIGH);
+
     }
 }
 
