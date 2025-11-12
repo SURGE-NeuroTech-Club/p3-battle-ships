@@ -42,7 +42,7 @@ void setTriggerPattern(uint8_t code)
     for (uint8_t i = 0; i < NUM_TRIGGER_PINS; ++i)
     {
         bool bitHigh = (code >> i) & 0x01;
-        digitalWrite(TRIGGER_PINS[i], bitHigh ? HIGH : LOW);
+        digitalWrite(TRIGGER_PINS[i], bitHigh ? LOW : HIGH);
 
     }
 }
@@ -51,6 +51,6 @@ void clearTriggers()
 {
     for (uint8_t i = 0; i < NUM_TRIGGER_PINS; ++i)
     {
-        digitalWrite(TRIGGER_PINS[i], LOW);
+        digitalWrite(TRIGGER_PINS[i], HIGH);
     }
 }
