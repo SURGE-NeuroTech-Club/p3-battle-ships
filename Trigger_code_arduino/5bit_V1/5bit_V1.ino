@@ -6,7 +6,7 @@ const uint8_t NUM_TRIGGER_PINS = 5;
 const uint8_t TRIGGER_PINS[NUM_TRIGGER_PINS] = {12, 10, 8, 6, 4};
 
 // Pulse duration in milliseconds
-const uint16_t PULSE_MS = 25;
+const uint16_t PULSE_MS = 300;
 
 void setup()
 {
