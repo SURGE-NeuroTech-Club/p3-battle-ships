@@ -8,8 +8,8 @@
 | 12          | D11               | Trigger Bit 0 (LSB)  |
 | 10          | D12               | Trigger Bit 1        |
 | 8           | D13               | Trigger Bit 2        |
-| 6           | D18               | Trigger Bit 3        |
-| 4           | D17               | Trigger Bit 4 (MSB)  |
+| 6           | D17               | Trigger Bit 3        |
+| 4           | D18               | Trigger Bit 4 (MSB)  |
 
 - Arduino GND is connected to the optocoupler Pin 2
 - OpenBCI DVDD is connected to the optocoupler Pin 5
