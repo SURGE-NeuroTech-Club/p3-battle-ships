@@ -1,12 +1,12 @@
-// 5-bit trigger box for EEG/OpenBCI
-// Uses pins 4, 6, 8, 10, 12 as outputs.
+// 4-bit trigger box for EEG/OpenBCI
+// Uses pins 6, 8, 10, 12 as outputs.
 // Receives 3 bytes over serial:
-//   [0] code (0–31, mapped to 5 LSBs)
+//   [0] code (0–15, mapped to 4 LSBs)
 //   [1] duration low byte (ms)
 //   [2] duration high byte (ms)
 
-const uint8_t NUM_TRIGGER_PINS = 5;
-const uint8_t TRIGGER_PINS[NUM_TRIGGER_PINS] = {12, 10, 8, 6, 4};
+const uint8_t NUM_TRIGGER_PINS = 4;
+const uint8_t TRIGGER_PINS[NUM_TRIGGER_PINS] = {12, 10, 8, 6};
 
 void setup()
 {
@@ -68,7 +68,7 @@ void loop()
             return;
         }
 
-        uint8_t code = static_cast<uint8_t>(rawCode) & 0x1F;
+        uint8_t code = static_cast<uint8_t>(rawCode) & 0x0F;
         uint16_t pulseMs = static_cast<uint16_t>(durLow) |
                            (static_cast<uint16_t>(durHigh) << 8);
 
