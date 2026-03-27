@@ -23,8 +23,18 @@ class BrainFlowBoardSetup:
     """
 
     _id_counter = 0  # Class-level variable to assign default IDs
+    
+    # Board mode definitions
+    BOARD_MODES = {
+        0: "Default",      # Sends accelerometer data in aux bytes
+        1: "Debug",        # Sends serial output over external serial port
+        2: "Analog",       # Reads from analog pins A5(D11), A6(D12), A7(D13)
+        3: "Digital",      # Reads from D11, D12, D13, D17, D18
+        4: "Marker",       # Turns accel off, injects markers via char to first AUX byte
+        "//": "Query"      # Get current board mode
+    }
 
-    def __init__(self, board_id, serial_port=None, master_board=None, name=None, **kwargs):
+    def __init__(self, board_id, serial_port=None, master_board=None, name=None, mode=3, **kwargs):
         """
         Initializes the BrainFlowBoardSetup class with the given board ID, serial port, master board, and additional parameters.
 
@@ -33,6 +43,7 @@ class BrainFlowBoardSetup:
             serial_port (str, optional): The serial port to which the BrainFlow board is connected.
             master_board (int, optional): The master board ID, used for playback or synthetic boards.
             name (str, optional): A user-friendly name or identifier for this instance. Defaults to 'Board X'.
+            mode (int or str, optional): Board mode (0=Default, 1=Debug, 2=Analog, 3=Digital, 4=Marker). Defaults to 3 (Digital).
             **kwargs: Additional keyword arguments to be set as attributes on the BrainFlowInputParams instance.
         """
         self.instance_id = BrainFlowBoardSetup._id_counter  # Unique identifier for each instance
@@ -41,6 +52,7 @@ class BrainFlowBoardSetup:
         self.board_id = board_id
         self.serial_port = serial_port
         self.master_board = master_board
+        self.mode = mode
 
         # Assign default name if not provided, based on the class-level ID counter
         self.name = name or f"Board {BrainFlowBoardSetup._id_counter}"
@@ -155,9 +167,11 @@ class BrainFlowBoardSetup:
     def setup(self):
         """
         Prepares the session and starts the data stream from the BrainFlow board.
+        Also configures the board to the specified mode.
 
         If no serial port is provided during initialization, this method attempts to auto-detect
-        a compatible device. Once the board is detected or provided, it prepares the session and starts streaming.
+        a compatible device. Once the board is detected or provided, it prepares the session, 
+        sets the board mode, and starts streaming.
 
         Raises:
             BrainFlowError: If the board fails to prepare the session or start streaming.
@@ -177,10 +191,9 @@ class BrainFlowBoardSetup:
         try:
             self.board.prepare_session()
             
-            self.board.config_board('/3')  # Set board mode to "3" -> enable digital channels
-            time.sleep(3)  # Short delay to ensure the board is configured before starting the stream
-            board_mode = self.board.config_board('//')
-            print(f"[{self.name}, {self.serial_port}] Board mode: '{board_mode}'")
+            # Set board mode
+            self.set_board_mode(self.mode)
+            time.sleep(0.5)
             
             self.session_prepared = True
             self.board.start_stream(450000)
@@ -189,6 +202,60 @@ class BrainFlowBoardSetup:
         except BrainFlowError as e:
             print(f"[{self.name}, {self.serial_port}] Error setting up board: {e}")
             self.board = None
+    
+    def set_board_mode(self, mode):
+        """
+        Sets the board to the specified mode.
+        
+        Args:
+            mode (int or str): Board mode to set:
+                - 0 or "Default": Sends accelerometer data in aux bytes
+                - 1 or "Debug": Sends serial output over external serial port
+                - 2 or "Analog": Reads from analog pins A5(D11), A6(D12), A7(D13)
+                - 3 or "Digital": Reads from D11, D12, D13, D17, D18
+                - 4 or "Marker": Turns accel off, injects markers via char
+                - "//" or "Query": Get current board mode
+        
+        Returns:
+            str or None: Returns the board response if querying, None otherwise.
+        
+        Raises:
+            ValueError: If an invalid mode is provided.
+            BrainFlowError: If the board configuration fails.
+        """
+        # Convert string mode names to integers if needed
+        if isinstance(mode, str):
+            mode_lower = mode.lower()
+            mode_map = {v.lower(): k for k, v in self.BOARD_MODES.items()}
+            if mode_lower in mode_map:
+                mode = mode_map[mode_lower]
+            elif mode in ["//", "query"]:
+                mode = "//"
+            else:
+                raise ValueError(f"Invalid mode: {mode}. Valid modes: {list(self.BOARD_MODES.values())}")
+        
+        # Validate mode
+        if mode not in self.BOARD_MODES:
+            raise ValueError(f"Invalid mode: {mode}. Valid modes: {list(self.BOARD_MODES.keys())}")
+        
+        mode_name = self.BOARD_MODES[mode]
+        mode_command = str(mode)
+        
+        try:
+            if mode == "//":
+                # Query current board mode
+                response = self.board.config_board(mode_command)
+                print(f"[{self.name}, {self.serial_port}] Current board mode: {response}")
+                return response
+            else:
+                # Set board mode
+                self.board.config_board(mode_command)
+                print(f"[{self.name}, {self.serial_port}] Board mode set to: {mode_name} (/{mode})")
+                self.mode = mode
+                return None
+        except BrainFlowError as e:
+            print(f"[{self.name}, {self.serial_port}] Error setting board mode to {mode_name}: {e}")
+            raise
 
     def show_params(self):
         """
